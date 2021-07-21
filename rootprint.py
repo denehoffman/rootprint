@@ -1,4 +1,4 @@
-#!/usr/python3
+##!/usr/bin/env python3
 
 import ROOT as root
 import numpy as np
