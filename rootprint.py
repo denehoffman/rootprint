@@ -77,10 +77,11 @@ def pixelate(bins: np.ndarray, n: int):
 def preview_hist(tkeyname: str):
     global tfile
     global preview
+    global preview_scale
     term_size = get_terminal_size()
     if preview:
         X_SCALE = term_size.columns - 9
-        Y_SCALE = int(term_size.lines * 0.75) - 5
+        Y_SCALE = int(term_size.lines * preview_scale) - 5
     else:
         X_SCALE = term_size.columns - 6
         Y_SCALE = term_size.lines - 5
@@ -122,6 +123,7 @@ def preview_hist(tkeyname: str):
 clear()
 fpath = sys.argv[1]
 preview = False
+preview_scale = 0.90
 tfile = root.TFile.Open(fpath, "READ")
 if len(sys.argv) == 3:
     keylist = [key for key in list_keys(tfile)]
@@ -131,5 +133,5 @@ if len(sys.argv) == 3:
         print('Key not found, run without a second argument to list available keys!')
 else:
     preview = True
-    terminal_menu = TerminalMenu(list_keys(tfile), preview_command=preview_hist, preview_size=0.75)
+    terminal_menu = TerminalMenu(list_keys(tfile), preview_command=preview_hist, preview_size=preview_scale)
     menu_entry_index = terminal_menu.show()
