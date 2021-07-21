@@ -31,16 +31,31 @@ def getBlock(i: int):
 
 def rebin(bins: np.ndarray, n: int):
     temp = bins.copy()
+    temp = np.trim_zeros(temp)
     while len(temp) > n:
-        if len(temp) % 2: # if odd
-            temp = np.pad(temp, 1)
-        half = np.zeros(int(len(temp) / 2))
-        for i in range(0, int(len(temp) / 2)):
-            half[i] += temp[2 * i]
-            half[i] += temp[2 * i + 1]
-        temp = half
+        if (len(temp) / 3) > (len(temp) / 2):
+            div2 = True
+        else:
+            div2 = False
+        if div2:
+            if len(temp) % 2: # if odd
+                temp = np.pad(temp, (0, 1))
+            half = np.zeros(int(len(temp) / 2))
+            for i in range(int(len(temp) / 2)):
+                half[i] += temp[2 * i]
+                half[i] += temp[2 * i + 1]
+            temp = half
+        else:
+            if len(temp) % 3: # if doesn't divide by 3
+                temp = np.pad(temp, (0, len(temp) % 3))
+            third = np.zeros(int(len(temp) / 3))
+            for i in range(int(len(temp) / 3)):
+                third[i] += temp[3 * i]
+                third[i] += temp[3 * i + 1]
+                third[i] += temp[3 * i + 2]
+            temp = third
     diff = n - len(temp)
-    return np.pad(temp, diff)
+    return np.pad(temp, (0, diff))
 
 def pixelate(bins: np.ndarray, n: int):
     fullblocks = np.zeros_like(bins)
