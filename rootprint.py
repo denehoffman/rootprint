@@ -3,7 +3,14 @@
 import ROOT as root
 import numpy as np
 import sys
+from os import system, name
 from simple_term_menu import TerminalMenu
+
+def clear():
+    if name == 'nt':
+        system('cls')
+    else:
+        system('clear')
 
 def list_keys(tfile: root.TFile):
     return (tkey.GetName() for tkey in tfile.GetListOfKeys() if (isinstance(tfile.Get(tkey.GetName()), root.TH1I) or isinstance(tfile.Get(tkey.GetName()), root.TH1F) or isinstance(tfile.Get(tkey.GetName()), root.TH1D)))
@@ -60,35 +67,46 @@ def rebin(bins: np.ndarray, n: int):
 def pixelate(bins: np.ndarray, n: int):
     fullblocks = np.zeros_like(bins)
     remainder = np.zeros_like(bins)
-    for i, b in enumerate(bins):
-        fullblocks[i] = b // n
-        remainder[i] = b % n
+    scaled = np.interp(bins, (bins.min(), bins.max()), (0, 8 * n))
+    for i, b in enumerate(scaled):
+        fullblocks[i] = int(b // 8)
+        remainder[i] = int(b % 8)
     return fullblocks, remainder
 
 
 def preview_hist(tkeyname: str):
     global tfile
+    X_SCALE = 180
+    Y_SCALE = 40
     hist = tfile.Get(tkeyname)
     bincontent = np.zeros(hist.GetNbinsX())
     for i in range(hist.GetNbinsX()):
         bincontent[i] = int(hist.GetBinContent(i))
-    bincontent = rebin(bincontent, 100) # now there are 100 bins
-    # TODO needs to be // (maxbin // 100) or something
-    fullblocks, remainder = pixelate(bincontent, 100) # // for fullblocks, %8 for remainder
-    grid = np.zeros((100, 100))
-    for i in range(100):
+    bincontent = rebin(bincontent, X_SCALE)
+    fullblocks, remainder = pixelate(bincontent, Y_SCALE)
+    grid = np.zeros((X_SCALE, Y_SCALE))
+    for i in range(X_SCALE):
         for j in range(int(fullblocks[i])):
             grid[i][j] = 8
-            grid[i][j+1] = remainder[i]
+            if remainder[i]:
+                grid[i][j+1] = remainder[i]
     line = ""
-    for j in range(100):
-        for i in range(100):
-            line += getBlock(grid[i][j])
+    for j in range(Y_SCALE):
+        for i in range(X_SCALE):
+            line += getBlock(grid[i][Y_SCALE - j - 1])
         line += "\n"
 
     return line
 
+clear()
 fpath = sys.argv[1]
 tfile = root.TFile.Open(fpath, "READ")
-terminal_menu = TerminalMenu(list_keys(tfile), preview_command=preview_hist, preview_size=0.75)
-menu_entry_index = terminal_menu.show()
+if len(sys.argv) == 3:
+    keylist = [key for key in list_keys(tfile)]
+    if sys.argv[2] in keylist:
+        print(preview_hist(sys.argv[2]))
+    else:
+        print('Key not found, run without a second argument to list available keys!')
+else:
+    terminal_menu = TerminalMenu(list_keys(tfile), preview_command=preview_hist, preview_size=0.75)
+    menu_entry_index = terminal_menu.show()
